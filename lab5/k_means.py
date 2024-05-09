@@ -8,22 +8,32 @@ def initialize_centroids_forgy(data, k):
 
 def initialize_centroids_kmeans_pp(data, k):
     # TODO implement kmeans++ initizalization
-    num_samples, num_features = data.shape
-    centroids = np.empty((k, num_features))
-    
-    first_centroid_idx = np.random.choice(num_samples)
-    centroids[0] = data[first_centroid_idx]
-    
-    for i in range(1, k):
-        distances = np.array([min(np.linalg.norm(centroid - x) ** 2 for centroid in centroids[:i]) for x in data])
-        probabilities = distances / distances.sum()
-        next_centroid_idx = np.random.choice(num_samples, p=probabilities)
-        centroids[i] = data[next_centroid_idx]
-    
-    return centroids
+
+    data_index = np.random.choice(len(data))
+    centroids = []
+    centroids.append(data[data_index])
+
+    for _ in range(k-1):
+        max_dist = -1
+        best = None
+        for point in data:
+            if not any(np.array_equal(point, centroid) for centroid in centroids):
+                dist = sum([np.sum((centroid - point)**2) for centroid in centroids])
+                if dist > max_dist:
+                    max_dist = dist
+                    best = point
+        centroids.append(best)
+
+    return np.array(centroids)
 
 def assign_to_cluster(data, centroids):
-    return np.argmin(np.linalg.norm(data[:, np.newaxis] - centroids, axis=2), axis=1)
+    assigned = []
+    for point in data:
+        dist = [np.linalg.norm(point - centroid) for centroid in centroids]
+        assigned_cluster = np.argmin(dist)
+        assigned.append(assigned_cluster)
+    return np.array(assigned)
+
 
 def update_centroids(data, assignments):
     num_samples, num_features = data.shape
@@ -49,7 +59,7 @@ def k_means(data, num_centroids, kmeansplusplus= False):
     
     assignments  = assign_to_cluster(data, centroids)
     for i in range(100): # max number of iteration = 100
-        print(f"Intra distance after {i} iterations: {mean_intra_distance(data, assignments, centroids)}")
+        #print(f"Intra distance after {i} iterations: {mean_intra_distance(data, assignments, centroids)}")
         centroids = update_centroids(data, assignments)
         new_assignments = assign_to_cluster(data, centroids)
         if np.all(new_assignments == assignments): # stop if nothing changed
